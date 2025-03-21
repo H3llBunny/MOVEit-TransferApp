@@ -8,6 +8,8 @@ namespace MOVEit_TransferApp
 
             builder.Services.AddControllersWithViews();
 
+            builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
+
             var app = builder.Build();
 
             if (!app.Environment.IsDevelopment())

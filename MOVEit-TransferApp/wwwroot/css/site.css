@@ -18,5 +18,26 @@ html {
 }
 
 body {
-  margin-bottom: 60px;
+    margin-bottom: 60px;
+    font-family: "Roboto Condensed", sans-serif;
+}
+
+.credentials{
+    padding-top:200px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+    .form-group label {
+        flex-shrink: 0;
+        width: 100px;
+    }
+
+.moveitImage {
+    width: 120px;
+    height: auto;
 }

@@ -18,6 +18,12 @@ namespace MOVEit_TransferApp.Controllers
             return View();
         }
 
+        [HttpPost]
+        public IActionResult GetCredentials (string username, string password)
+        {
+            return View();
+        }
+
         public IActionResult Privacy()
         {
             return View();
