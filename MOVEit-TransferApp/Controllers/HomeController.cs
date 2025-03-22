@@ -12,7 +12,7 @@ namespace MOVEit_TransferApp.Controllers
 
         public HomeController(ITokenService tokenService)
         {
-            this._tokenService = tokenService;
+            _tokenService = tokenService;
         }
 
         public async Task<IActionResult> Index()

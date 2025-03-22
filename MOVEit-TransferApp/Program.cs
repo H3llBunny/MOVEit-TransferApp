@@ -18,6 +18,8 @@ namespace MOVEit_TransferApp
                 .CreateLogger();
 
             builder.Services.AddHttpClient<ITokenService, TokenService>();
+            builder.Services.AddHttpClient<TokenRefresher>();
+            builder.Services.AddHostedService<TokenRefresher>();
 
             builder.Services.AddControllersWithViews();
 
