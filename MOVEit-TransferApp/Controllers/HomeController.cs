@@ -1,26 +1,53 @@
 using Microsoft.AspNetCore.Mvc;
 using MOVEit_TransferApp.Models;
+using MOVEit_TransferApp.Services;
+using System.Text.Json;
 using System.Diagnostics;
 
 namespace MOVEit_TransferApp.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly ITokenService _tokenService;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ITokenService tokenService)
         {
-            _logger = logger;
+            this._tokenService = tokenService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            string tokenPath = Path.Combine(AppContext.BaseDirectory, "user_token.json");
+
+            if (System.IO.File.Exists(tokenPath))
+            {
+                string tokenJson = await System.IO.File.ReadAllTextAsync(tokenPath);
+                var token = JsonSerializer.Deserialize<Token>(tokenJson);
+
+                if (token.IsExpired())
+                {
+                    return View();
+                }
+                else
+                {
+                    var viewModel = new HomePageViewModel { HasToken = true };
+                    return View(viewModel);
+                }
+            }
+
             return View();
         }
 
         [HttpPost]
-        public IActionResult GetCredentials (string username, string password)
+        public async Task<IActionResult> GetCredentials (string username, string password)
         {
+            bool requestSuccess = await _tokenService.RequestTokenAsync(username, password);
+
+            if (requestSuccess)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
             return View();
         }
 
