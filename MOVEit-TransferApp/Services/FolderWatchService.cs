@@ -43,9 +43,10 @@ namespace MOVEit_TransferApp.Services
 
             if (homeFolderId != null)
             {
-                var content = new MultipartFormDataContent();
-                var fileContent = new StreamContent(File.OpenRead(filePath));
+                using var fileStream = File.OpenRead(filePath);
+                var fileContent = new StreamContent(fileStream);
 
+                var content = new MultipartFormDataContent();
                 content.Add(fileContent, "file", Path.GetFileName(filePath));
 
                 string token = await GetUserToken();
