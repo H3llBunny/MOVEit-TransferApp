@@ -18,7 +18,7 @@ namespace MOVEit_TransferApp.Services
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -42,7 +42,6 @@ namespace MOVEit_TransferApp.Services
                         await Task.Delay(TimeSpan.FromMinutes(3), stoppingToken);
 
                     }
-
                 }
                 catch (Exception ex)
                 {

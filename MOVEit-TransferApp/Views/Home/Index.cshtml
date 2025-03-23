@@ -21,7 +21,24 @@
 
     if (Model != null && Model.HasToken)
     {
-
+        <div class="folderSelect col-md-6 mx-auto" style="text-align: center;">
+            @{
+                bool userPath = Model.UserFolderPath != null;
+            }
+            @if (userPath)
+            {
+                <div style="padding-bottom: 30px;">
+                    <label>Currently selected folder path: <span style="color: antiquewhite; font-weight: bold;">@Model.UserFolderPath</span></label>
+                </div>
+            }
+            <form asp-action="AddFolderPath" method="post">
+                <div class="form-group-folder">
+                    <label for="folderPath">Enter Folder Path:</label>
+                    <input type="text" name="folderPath" id="folderPath" placeholder="C:\Users\Documents" />
+                    <button type="submit" class="btn btn-primary">@((userPath ? "Change" : "Select"))</button>
+                </div>
+            </form>
+        </div>
     }
     else
     {

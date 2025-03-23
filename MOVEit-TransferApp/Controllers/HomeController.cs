@@ -9,15 +9,18 @@ namespace MOVEit_TransferApp.Controllers
     public class HomeController : Controller
     {
         private readonly ITokenService _tokenService;
+        private readonly FolderWatchService _folderWatchService;
 
-        public HomeController(ITokenService tokenService)
+        public HomeController(ITokenService tokenService, FolderWatchService folderWatchService)
         {
             _tokenService = tokenService;
+            this._folderWatchService = folderWatchService;
         }
 
         public async Task<IActionResult> Index()
         {
             string tokenPath = Path.Combine(AppContext.BaseDirectory, "user_token.json");
+            string userFolderPath = Path.Combine(AppContext.BaseDirectory, "user_folder_path.txt");
 
             if (System.IO.File.Exists(tokenPath))
             {
@@ -30,7 +33,16 @@ namespace MOVEit_TransferApp.Controllers
                 }
                 else
                 {
-                    var viewModel = new HomePageViewModel { HasToken = true };
+                    bool folderPath = System.IO.File.Exists(userFolderPath);
+                    string path = null;
+
+                    if (folderPath)
+                    {
+                        path = await System.IO.File.ReadAllTextAsync(userFolderPath);
+                        _folderWatchService.MonitorFolder(path);
+                    }
+
+                    var viewModel = new HomePageViewModel { HasToken = true, UserFolderPath = folderPath ? path : null};
                     return View(viewModel);
                 }
             }
@@ -39,7 +51,7 @@ namespace MOVEit_TransferApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> GetCredentials (string username, string password)
+        public async Task<IActionResult> GetCredentials(string username, string password)
         {
             bool requestSuccess = await _tokenService.RequestTokenAsync(username, password);
 
@@ -49,6 +61,20 @@ namespace MOVEit_TransferApp.Controllers
             }
 
             return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddFolderPath(string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+            {
+                TempData["ErrorMessage"] = "Please make sure you folder path is correct.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            _folderWatchService.MonitorFolder(folderPath);
+
+            return RedirectToAction(nameof(Index));
         }
 
         public IActionResult Privacy()
