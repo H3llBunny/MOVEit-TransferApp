@@ -3,6 +3,8 @@ using MOVEit_TransferApp.Models;
 using MOVEit_TransferApp.Services;
 using System.Text.Json;
 using System.Diagnostics;
+using Microsoft.AspNetCore.SignalR;
+using MOVEit_TransferApp.Hubs;
 
 namespace MOVEit_TransferApp.Controllers
 {
@@ -10,11 +12,13 @@ namespace MOVEit_TransferApp.Controllers
     {
         private readonly ITokenService _tokenService;
         private readonly FolderWatchService _folderWatchService;
+        private readonly IHubContext<UploadNotificationHub> _hubContext;
 
-        public HomeController(ITokenService tokenService, FolderWatchService folderWatchService)
+        public HomeController(ITokenService tokenService, FolderWatchService folderWatchService, IHubContext<UploadNotificationHub> hubContext)
         {
             _tokenService = tokenService;
-            this._folderWatchService = folderWatchService;
+            _folderWatchService = folderWatchService;
+            _hubContext = hubContext;
         }
 
         public async Task<IActionResult> Index()
@@ -39,10 +43,17 @@ namespace MOVEit_TransferApp.Controllers
                     if (folderPath)
                     {
                         path = await System.IO.File.ReadAllTextAsync(userFolderPath);
-                        _folderWatchService.MonitorFolder(path);
+                        _folderWatchService.MonitorFolder(path, async (fileName, size) =>
+                        {
+                            var connectionId = UploadNotificationHub.GetConnectionId();
+                            if (connectionId != null)
+                            {
+                                await _hubContext.Clients.Client(connectionId).SendAsync("ReceiveNotification", fileName, size);
+                            }
+                        });
                     }
 
-                    var viewModel = new HomePageViewModel { HasToken = true, UserFolderPath = folderPath ? path : null};
+                    var viewModel = new HomePageViewModel { HasToken = true, UserFolderPath = folderPath ? path : null };
                     return View(viewModel);
                 }
             }
@@ -72,7 +83,14 @@ namespace MOVEit_TransferApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            _folderWatchService.MonitorFolder(folderPath);
+            _folderWatchService.MonitorFolder(folderPath, async (fileName, size) =>
+            {
+                var connectionId = UploadNotificationHub.GetConnectionId();
+                if (connectionId != null)
+                {
+                    await _hubContext.Clients.Client(connectionId).SendAsync("ReceiveNotification", fileName, size);
+                }
+            });
 
             return RedirectToAction(nameof(Index));
         }

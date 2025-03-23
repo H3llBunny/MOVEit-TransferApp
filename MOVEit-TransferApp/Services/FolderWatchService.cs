@@ -20,9 +20,8 @@ namespace MOVEit_TransferApp.Services
             _logger = logger;
         }
 
-        public async void MonitorFolder(string folderPath)
+        public async void MonitorFolder(string folderPath, Func<string, int, Task> notificationCallBack = null)
         {
-            
             StopWatching();
 
             await File.WriteAllTextAsync(_userFolderPath, folderPath);
@@ -34,10 +33,10 @@ namespace MOVEit_TransferApp.Services
                 EnableRaisingEvents = true
             };
 
-            _watcher.Created += (sender, e) => Task.Run(() => UploadNewFileAsync(e.FullPath));
+            _watcher.Created += (sender, e) => Task.Run(() => UploadNewFileAsync(e.FullPath, notificationCallBack));
         }
 
-        private async Task UploadNewFileAsync(string filePath)
+        private async Task UploadNewFileAsync(string filePath, Func<string, int, Task> notificationCallBack = null)
         {
             string homeFolderId = await GetHomeFolderId();
 
@@ -58,6 +57,16 @@ namespace MOVEit_TransferApp.Services
                 if (response.IsSuccessStatusCode)
                 {
                     Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var jsonDoc = JsonDocument.Parse(responseContent);
+
+                    if (jsonDoc.RootElement.TryGetProperty("name", out var fileName) && jsonDoc.RootElement.TryGetProperty("size", out var size))
+                    {
+                        string fileNameString = fileName.GetString();
+                        int sizeInt = size.GetInt32();
+                        notificationCallBack?.Invoke(fileNameString, sizeInt);
+                    }
                 }
                 else
                 {

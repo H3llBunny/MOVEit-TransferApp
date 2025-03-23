@@ -4,61 +4,133 @@
     ViewData["Title"] = "Home Page";
 }
 
-@{
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger d-flex justify-content-center align-items-center">
-            @TempData["ErrorMessage"]
-        </div>
-    }
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger d-flex justify-content-center align-items-center">
+        @TempData["ErrorMessage"]
+    </div>
+}
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success d-flex justify-content-center align-items-center">
-            @TempData["SuccessMessage"]
-        </div>
-    }
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success d-flex justify-content-center align-items-center">
+        @TempData["SuccessMessage"]
+    </div>
+}
 
-    if (Model != null && Model.HasToken)
-    {
-        <div class="folderSelect col-md-6 mx-auto" style="text-align: center;">
-            @{
-                bool userPath = Model.UserFolderPath != null;
+@if (Model != null && Model.HasToken)
+{
+    <div class="folderSelect col-md-6 mx-auto" style="text-align: center;">
+        @{
+            bool userPath = Model.UserFolderPath != null;
+        }
+        @if (userPath)
+        {
+            <div style="padding-bottom: 30px;">
+                <div style="padding-bottom: 20px;">
+                    <label style="color:lawngreen">You are logged in</label>
+                </div>
+                <label>Currently selected folder path: <span style="color: antiquewhite; font-weight: bold;">@Model.UserFolderPath</span></label>
+            </div>
+        }
+        <form asp-action="AddFolderPath" method="post">
+            <div class="form-group-folder">
+                <label for="folderPath">@((userPath ? "Change" : "Enter")) Folder Path:</label>
+                <input type="text" name="folderPath" id="folderPath" placeholder="C:\Users\Documents" />
+                <button type="submit" class="btn btn-primary">@((userPath ? "Change" : "Select"))</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="notification-container" style="max-height: 200px; overflow-y: auto; margin-top: 20px;"></div>
+}
+else
+{
+    <div class="credentials col-md-6 mx-auto" style="text-align: center;">
+        <h2 style="padding-bottom: 10px">Please enter your <img class="moveitImage" src="~/images/moveit.png" /> credentials</h2>
+        <form asp-action="GetCredentials" method="post">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" name="username" id="username" class="form-control" />
+            </div>
+
+            <br />
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" name="password" id="password" class="form-control" />
+            </div>
+            <div class="d-flex justify-content-center mt-3">
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+}
+
+@if (Model?.UserFolderPath != null)
+{
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:7191/uploadNotificationHub")
+            .build();
+
+        async function initiateConnection(attempts = 10) {
+            try {
+                await connection.start();
+                console.log("SignalR connection established.");
+            } catch (err) {
+                console.log("Error starting SignalR connection:", err);
+
+                if (attempts > 1) {
+                    setTimeout(() => initiateConnection(attempts - 1), 5000);
+                } else {
+                    console.error("Max retry attempts reached. SignalR connection failed.");
+                }
             }
-            @if (userPath)
-            {
-                <div style="padding-bottom: 30px;">
-                    <label>Currently selected folder path: <span style="color: antiquewhite; font-weight: bold;">@Model.UserFolderPath</span></label>
-                </div>
-            }
-            <form asp-action="AddFolderPath" method="post">
-                <div class="form-group-folder">
-                    <label for="folderPath">Enter Folder Path:</label>
-                    <input type="text" name="folderPath" id="folderPath" placeholder="C:\Users\Documents" />
-                    <button type="submit" class="btn btn-primary">@((userPath ? "Change" : "Select"))</button>
-                </div>
-            </form>
-        </div>
-    }
-    else
-    {
-        <div class="credentials col-md-6 mx-auto" style="text-align: center;">
-            <h2 style="padding-bottom: 10px">Please enter your <img class="moveitImage" src="~/images/moveit.png" /> credentials</h2>
-            <form asp-action="GetCredentials" method="post">
-                <div class="form-group">
-                    <label for="username">Username:</label>
-                    <input type="text" name="username" id="username" class="form-control" />
-                </div>
+        }
 
-                <br />
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" name="password" id="password" class="form-control" />
-                </div>
-                <div class="d-flex justify-content-center mt-3">
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                </div>
-            </form>
-        </div>
-    }
+        initiateConnection();
+
+        connection.on("ReceiveNotification", (fileName, size) => {
+            displayNotification(`New file: ${fileName}, Size: ${formatFileSize(size)}`);
+        });
+
+        function displayNotification(message) {
+            const notificationContainer = document.getElementById("notification-container");
+
+            const notification = document.createElement("div");
+            notification.className = "notification";
+            notification.innerHTML = message;
+
+            notificationContainer.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 60000);
+
+            const notifications = notificationContainer.getElementsByClassName("notification");
+            if (notifications.length > 5) {
+                notificationContainer.style.overflowY = "auto";
+            }
+        }
+
+        function formatFileSize(bytes) {
+            const kilobyte = 1024;
+            const megabyte = kilobyte * 1024;
+            const gigabyte = megabyte * 1024;
+            const terabyte = gigabyte * 1024;
+
+            switch (true) {
+                case (bytes < kilobyte):
+                    return `${bytes} B`;
+                case (bytes < megabyte):
+                    return `${(bytes / kilobyte).toFixed(2)} KB`;
+                case (bytes < gigabyte):
+                    return `${(bytes / megabyte).toFixed(2)} MB`;
+                case (bytes < terabyte):
+                    return `${(bytes / gigabyte).toFixed(2)} GB`;
+                default:
+                    return `${(bytes / terabyte.toFixed(2))} TB`;
+            }
+        }
+    </script>
 }

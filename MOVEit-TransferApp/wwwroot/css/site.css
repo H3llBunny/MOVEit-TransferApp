@@ -56,3 +56,8 @@ body {
     .form-group-folder input {
         width: 700px;
     }
+
+#notification-container {
+    text-align: center;
+    padding-top: 20px;
+}

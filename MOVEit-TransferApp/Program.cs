@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.SignalR;
+using MOVEit_TransferApp.Hubs;
 using MOVEit_TransferApp.Services;
 using Serilog;
 
@@ -24,6 +26,7 @@ namespace MOVEit_TransferApp
             builder.Services.AddHttpClient<FolderWatchService>();
             builder.Services.AddSingleton<FolderWatchService>();
 
+            builder.Services.AddSignalR();
             builder.Services.AddControllersWithViews();
 
             builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
@@ -42,6 +45,8 @@ namespace MOVEit_TransferApp
             app.UseStaticFiles();
 
             app.UseRouting();
+
+            app.MapHub<UploadNotificationHub>("/uploadNotificationHub");
 
             app.UseAuthorization();
 
