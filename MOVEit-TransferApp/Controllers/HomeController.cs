@@ -37,6 +37,7 @@ namespace MOVEit_TransferApp.Controllers
                 }
                 else
                 {
+                    TempData["HasToken"] = true;
                     bool folderPath = System.IO.File.Exists(userFolderPath);
                     string path = null;
 
@@ -91,6 +92,24 @@ namespace MOVEit_TransferApp.Controllers
                     await _hubContext.Clients.Client(connectionId).SendAsync("ReceiveNotification", fileName, size);
                 }
             });
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        public IActionResult Logout()
+        {
+            string tokenPath = Path.Combine(AppContext.BaseDirectory, "user_token.json");
+            string userFolderPath = Path.Combine(AppContext.BaseDirectory, "user_folder_path.txt");
+
+            if (System.IO.File.Exists(tokenPath))
+            {
+                System.IO.File.Delete(tokenPath);
+            }
+
+            if (System.IO.File.Exists(userFolderPath))
+            {
+                System.IO.File.Delete(userFolderPath);
+            }
 
             return RedirectToAction(nameof(Index));
         }
