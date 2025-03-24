@@ -27,7 +27,7 @@ body {
 }
 
 .folderSelect {
-    padding-top: 200px;
+    padding-top: 50px;
 }
 
 .form-group {
@@ -69,6 +69,13 @@ body {
 .notification {
     border: solid 1px #015500;
     background-color: #1fe9001d;
+    width: 95%;
+    margin: 2px auto;
+}
+
+.notification-error {
+    border: solid 1px #600000;
+    background-color: #ed000038;
     width: 95%;
     margin: 2px auto;
 }

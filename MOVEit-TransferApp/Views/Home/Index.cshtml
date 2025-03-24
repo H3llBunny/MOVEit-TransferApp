@@ -26,7 +26,7 @@
         }
         @if (userPath)
         {
-            <div style="padding-bottom: 30px;">
+            <div style="padding-bottom: 10px;">
                 <div style="padding-bottom: 20px;">
                     <label style="color:lawngreen">You are logged in</label>
                 </div>
@@ -42,7 +42,7 @@
         </form>
     </div>
 
-    <div id="notification-container" style="max-height: 200px; overflow-y: auto; margin-top: 20px;"></div>
+    <div id="notification-container" style="max-height: 400px; overflow-y: auto; margin-top: 20px;"></div>
 }
 else
 {
@@ -98,7 +98,11 @@ else
                 fileName = `${trimmedName}...${extension}`;
             }
 
-            displayNotification(`New file: ${fileName}, Size: ${formatFileSize(size)}`);
+            if (size < 0) {
+                displayNotificationError(`Error uploading file: ${fileName}`);
+            } else {
+                displayNotification(`File uploaded: ${fileName}, Size: ${formatFileSize(size)}`);
+            }
         });
 
         function displayNotification(message) {
@@ -114,7 +118,22 @@ else
             notification.remove();
             }, 60000); *@
 
-                            const notifications = notificationContainer.getElementsByClassName("notification");
+            const notifications = notificationContainer.getElementsByClassName("notification");
+            if (notifications.length > 5) {
+                notificationContainer.style.overflowY = "scroll";
+            }
+        }
+
+        function displayNotificationError(message) {
+            const notificationContainer = document.getElementById("notification-container");
+
+            const notification = document.createElement("div");
+            notification.className = "notification-error";
+            notification.innerHTML = message;
+
+            notificationContainer.appendChild(notification);
+
+            const notifications = notificationContainer.getElementsByClassName("notification-error");
             if (notifications.length > 5) {
                 notificationContainer.style.overflowY = "scroll";
             }

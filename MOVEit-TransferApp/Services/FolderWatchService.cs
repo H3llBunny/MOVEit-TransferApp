@@ -70,6 +70,9 @@ namespace MOVEit_TransferApp.Services
                 }
                 else
                 {
+                    string fileName = Path.GetFileName(filePath);
+                    string errorMessage = $"{fileName} - {response.StatusCode}";
+                    notificationCallBack?.Invoke(errorMessage, -1);
                     _logger.LogError($"Error uploading file: {response.StatusCode}");
                 }
             }
