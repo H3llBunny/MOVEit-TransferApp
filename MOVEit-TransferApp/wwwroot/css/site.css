@@ -58,6 +58,17 @@ body {
     }
 
 #notification-container {
+    display: flex;
+    flex-direction:column;
     text-align: center;
     padding-top: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.notification {
+    border: solid 1px #015500;
+    background-color: #1fe9001d;
+    width: 95%;
+    margin: 2px auto;
 }

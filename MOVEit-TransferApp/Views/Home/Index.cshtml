@@ -91,6 +91,13 @@ else
         initiateConnection();
 
         connection.on("ReceiveNotification", (fileName, size) => {
+
+            if (fileName.length > 30) {
+                const extension = fileName.substring(fileName.lastIndexOf("."));
+                const trimmedName = fileName.substring(0, 30);
+                fileName = `${trimmedName}...${extension}`;
+            }
+
             displayNotification(`New file: ${fileName}, Size: ${formatFileSize(size)}`);
         });
 
@@ -103,13 +110,13 @@ else
 
             notificationContainer.appendChild(notification);
 
-            setTimeout(() => {
-                notification.remove();
-            }, 60000);
+        @*  setTimeout(() => {
+            notification.remove();
+            }, 60000); *@
 
-            const notifications = notificationContainer.getElementsByClassName("notification");
+                            const notifications = notificationContainer.getElementsByClassName("notification");
             if (notifications.length > 5) {
-                notificationContainer.style.overflowY = "auto";
+                notificationContainer.style.overflowY = "scroll";
             }
         }
 
