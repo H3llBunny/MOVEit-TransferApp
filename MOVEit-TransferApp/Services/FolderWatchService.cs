@@ -2,10 +2,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Security.Cryptography;
-using System.Text;
-using System.Collections.Specialized;
-using System.Net;
-using System.Text.Json.Serialization;
 
 namespace MOVEit_TransferApp.Services
 {
@@ -17,13 +13,14 @@ namespace MOVEit_TransferApp.Services
         private string _tokenPath = Path.Combine(AppContext.BaseDirectory, "user_token.json");
         private string _userFolderPath = Path.Combine(AppContext.BaseDirectory, "user_folder_path.txt");
         private const string _url = "https://testserver.moveitcloud.com/api/v1/folders";
-        private const int _MaxFileSize = 10485760;
-        private const int ChunkSize = 10485760;
+        private const int _MaxFileSize = 52428800;
 
         public FolderWatchService(HttpClient client, ILogger<FolderWatchService> logger)
         {
             _client = client;
             _logger = logger;
+            _client.Timeout = TimeSpan.FromMinutes(30);
+            _client.DefaultRequestHeaders.ConnectionClose = false;
         }
 
         public async void MonitorFolder(string folderPath, Func<string, int, Task> notificationCallBack = null)
@@ -52,17 +49,26 @@ namespace MOVEit_TransferApp.Services
                 long fileSize = fileInfo.Length;
                 string token = await GetUserToken();
 
-                //if (fileSize > _MaxFileSize)
-                //{
-                //    await UploadFileInChunksAsync(filePath, homeFolderId, token);
-                //}
-                //else
-                //{
+                if (fileSize > _MaxFileSize)
+                {
+                    try
+                    {
+                        await UploadFileInChunksAsync(fileInfo, filePath, fileSize, homeFolderId, token, notificationCallBack);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                }
+                else
+                {
                     using var fileStream = File.OpenRead(filePath);
                     var fileContent = new StreamContent(fileStream);
 
-                    var content = new MultipartFormDataContent();
-                    content.Add(fileContent, "file", Path.GetFileName(filePath));
+                    var content = new MultipartFormDataContent()
+                    {
+                        { fileContent, "file", Path.GetFileName(filePath) }
+                    };
 
                     _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -89,7 +95,7 @@ namespace MOVEit_TransferApp.Services
                         notificationCallBack?.Invoke(errorMessage, -1);
                         _logger.LogError($"Error uploading file: {response.StatusCode}");
                     }
-                //}
+                }
             }
             else
             {
@@ -97,74 +103,50 @@ namespace MOVEit_TransferApp.Services
             }
         }
 
-        //public async Task UploadFileInChunksAsync(string filePath, string folderId, string token)
-        //{
-        //    using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-        //    long fileSize = fileStream.Length;
-        //    string fileName = Path.GetFileName(filePath);
-        //    int totalChunks = (int)Math.Ceiling((double)fileSize / ChunkSize);
+        private async Task UploadFileInChunksAsync(FileInfo fileInfo, string filePath, long fileSize,
+            string homeFolderId, string token, Func<string, int, Task> notificationCallBack = null)
+        {
+            string fileName = fileInfo.Name;
+            string hashString = GetHashString(filePath);
 
-        //    string fileHash = GenerateHash(filePath);
+            var requestUri = $"{_url}/{homeFolderId}/files";
 
-        //    _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.TransferEncodingChunked = true;
 
-        //    var multipartContent = new MultipartFormDataContent
-        //    {
-        //        { new StringContent("sha-256"), "hashtype" },
-        //        { new StringContent(fileHash), "hash" },
-        //    };
+            try
+            {
+                request.Content = new MultipartChunkedFileContent(filePath, fileName, hashString);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
 
-        //    for (int chunkNumber = 0; chunkNumber < totalChunks; chunkNumber++)
-        //    {
-        //        long chunkStart = chunkNumber * ChunkSize;
-        //        long chunkEnd = Math.Min(chunkStart + ChunkSize, fileSize);
-        //        long chunkSize = chunkEnd - chunkStart;
+            using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
-        //        fileStream.Seek(chunkStart, SeekOrigin.Begin);
-        //        byte[] buffer = new byte[chunkSize];
-        //        await fileStream.ReadAsync(buffer, 0, (int)chunkSize);
+            if (response.IsSuccessStatusCode)
+            {
+                notificationCallBack?.Invoke(fileName, (int)fileSize);
+            }
+            else
+            {
+                string errorMessage = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"File upload failed: {response.StatusCode}");
+                Console.WriteLine($"Error details: {errorMessage}");
+            }
+        }
 
-        //        var formData = new MultipartFormDataContent
-        //        {
-        //            { new StringContent("sha-256"), "hashtype" },
-        //            { new StringContent(fileHash), "hash" },
-        //            { new ByteArrayContent(buffer), "file", fileName }
-        //        };
+        private static string GetHashString(string filePath)
+        {
+            using var hashAlgorithm = SHA256.Create();
+            using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
 
-        //        string uploadUrl = $"{_url}/{folderId}/files";
+            byte[] hashBytes = hashAlgorithm.ComputeHash(fileStream);
 
-        //        try
-        //        {
-        //            var response = await _client.PostAsync(uploadUrl, formData);
-
-        //            if (response.IsSuccessStatusCode)
-        //            {
-        //                Console.WriteLine($"Uploaded chunk {chunkNumber + 1} of {totalChunks} ({chunkSize} bytes)");
-        //            }
-        //            else
-        //            {
-        //                string errorMessage = await response.Content.ReadAsStringAsync();
-        //                Console.WriteLine($"Upload failed: {response.StatusCode} {errorMessage}");
-        //                break;
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Console.WriteLine($"Exception during upload: {ex.Message}");
-        //            break;
-        //        }
-        //    }
-
-        //    Console.WriteLine($"File upload completed: {fileName}");
-        //}
-
-        //private static string GenerateHash(string filePath)
-        //{
-        //    using var sha256 = SHA256.Create();
-        //    using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-        //    var hashBytes = sha256.ComputeHash(fileStream);
-        //    return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-        //}
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
 
         private async Task<string> GetHomeFolderId()
         {

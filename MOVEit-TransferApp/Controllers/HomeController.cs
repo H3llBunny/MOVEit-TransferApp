@@ -44,6 +44,7 @@ namespace MOVEit_TransferApp.Controllers
                     if (folderPath)
                     {
                         path = await System.IO.File.ReadAllTextAsync(userFolderPath);
+
                         _folderWatchService.MonitorFolder(path, async (fileName, size) =>
                         {
                             var connectionId = UploadNotificationHub.GetConnectionId();
