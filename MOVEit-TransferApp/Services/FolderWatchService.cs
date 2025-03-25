@@ -76,22 +76,11 @@ namespace MOVEit_TransferApp.Services
 
                     if (response.IsSuccessStatusCode)
                     {
-                        Console.WriteLine(await response.Content.ReadAsStringAsync());
-
-                        var responseContent = await response.Content.ReadAsStringAsync();
-                        var jsonDoc = JsonDocument.Parse(responseContent);
-
-                        if (jsonDoc.RootElement.TryGetProperty("name", out var fileName) && jsonDoc.RootElement.TryGetProperty("size", out var size))
-                        {
-                            string fileNameString = fileName.GetString();
-                            int sizeInt = size.GetInt32();
-                            notificationCallBack?.Invoke(fileNameString, sizeInt);
-                        }
+                        notificationCallBack?.Invoke(fileInfo.Name, (int)fileSize);
                     }
                     else
                     {
-                        string fileName = Path.GetFileName(filePath);
-                        string errorMessage = $"{fileName} - {response.StatusCode}";
+                        string errorMessage = $"{fileInfo.Name} - {response.StatusCode}";
                         notificationCallBack?.Invoke(errorMessage, -1);
                         _logger.LogError($"Error uploading file: {response.StatusCode}");
                     }

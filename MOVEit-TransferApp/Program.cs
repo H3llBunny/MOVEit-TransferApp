@@ -9,6 +9,8 @@ namespace MOVEit_TransferApp
     {
         public static void Main(string[] args)
         {
+            Console.WriteLine("Application is starting...");
+
             var builder = WebApplication.CreateBuilder(args);
 
             var logFilePath = Path.Combine(AppContext.BaseDirectory, "logs", "app-log.txt");
@@ -35,6 +37,13 @@ namespace MOVEit_TransferApp
 
             var app = builder.Build();
 
+            Console.WriteLine("Application has been built. Ready to handle requests.");
+
+            app.Urls.Add("https://localhost:7191");
+            app.Urls.Add("http://localhost:5176");
+
+            Console.WriteLine("Application is listening on: https://localhost:7191, http://localhost:5176");
+
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
@@ -53,6 +62,8 @@ namespace MOVEit_TransferApp
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            Console.WriteLine("Starting application...");
 
             app.Run();
         }
