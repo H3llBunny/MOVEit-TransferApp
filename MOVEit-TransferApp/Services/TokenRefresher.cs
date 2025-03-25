@@ -53,11 +53,11 @@ namespace MOVEit_TransferApp.Services
 
         private async Task DoWorkAsync(Token token, CancellationToken stoppingToken)
         {
-            var content = new FormUrlEncodedContent(new[]
-            {
+            var content = new FormUrlEncodedContent(
+            [
                  new KeyValuePair<string, string>("grant_type", "refresh_token"),
                  new KeyValuePair<string, string>("refresh_token", token.RefreshToken)
-            });
+            ]);
 
             try
             {
@@ -80,7 +80,7 @@ namespace MOVEit_TransferApp.Services
                     {
                         newToken.Obtained = DateTime.UtcNow;
                         string jsonToken = JsonSerializer.Serialize<Token>(newToken, new JsonSerializerOptions { WriteIndented = true });
-                        await File.WriteAllTextAsync(_tokenPath, jsonToken);
+                        await File.WriteAllTextAsync(_tokenPath, jsonToken, stoppingToken);
                     }
                 }
             }

@@ -17,12 +17,12 @@ namespace MOVEit_TransferApp.Services
 
         public async Task<bool> RequestTokenAsync(string username, string password)
         {
-            var content = new FormUrlEncodedContent(new[]
-            {
+            var content = new FormUrlEncodedContent(
+            [
                 new KeyValuePair<string, string>("grant_type", "password"),
                 new KeyValuePair<string, string>("username", username),
                 new KeyValuePair<string, string>("password", password)
-            });
+            ]);
 
             try
             {
