@@ -73,6 +73,9 @@ else
             .withUrl("https://localhost:7191/uploadNotificationHub")
             .build();
 
+        connection.serverTimeoutInMilliseconds = 900000; // 15 minutes
+        connection.keepAliveIntervalInMilliseconds = 900000; // 15 minutes
+
         async function initiateConnection(attempts = 10) {
             try {
                 await connection.start();
@@ -130,7 +133,6 @@ else
             const notification = document.createElement("div");
             notification.className = "notification-error";
             notification.innerHTML = message;
-
             notificationContainer.appendChild(notification);
 
             const notifications = notificationContainer.getElementsByClassName("notification-error");

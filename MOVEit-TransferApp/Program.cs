@@ -28,7 +28,12 @@ namespace MOVEit_TransferApp
             builder.Services.AddHttpClient<FolderWatchService>();
             builder.Services.AddSingleton<FolderWatchService>();
 
-            builder.Services.AddSignalR();
+            builder.Services.AddSignalR(options =>
+            {
+                options.KeepAliveInterval = TimeSpan.FromMinutes(15);
+                options.ClientTimeoutInterval = TimeSpan.FromMinutes(15);
+            });
+
             builder.Services.AddControllersWithViews();
 
             builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
@@ -40,9 +45,8 @@ namespace MOVEit_TransferApp
             Console.WriteLine("Application has been built. Ready to handle requests.");
 
             app.Urls.Add("https://localhost:7191");
-            app.Urls.Add("http://localhost:5176");
 
-            Console.WriteLine("Application is listening on: https://localhost:7191, http://localhost:5176");
+            Console.WriteLine("Application is listening on: https://localhost:7191");
 
             if (!app.Environment.IsDevelopment())
             {

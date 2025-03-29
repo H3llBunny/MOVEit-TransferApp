@@ -23,7 +23,7 @@ namespace MOVEit_TransferApp.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task FolderNotification(string fileName, int size)
+        public async Task FolderNotification(string fileName, long size)
         {
             if (_connetionId != null)
             {

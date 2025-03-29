@@ -8,15 +8,13 @@ namespace MOVEit_TransferApp.Models
     {
         private readonly string _filePath;
         private readonly string _fileName;
-        private readonly string _hash;
         private const int ChunkSize = 10485760; //10 MB
         private readonly string _boundary = Guid.NewGuid().ToString("N");
 
-        public MultipartChunkedFileContent(string filePath, string fileName, string hash)
+        public MultipartChunkedFileContent(string filePath, string fileName)
         {
             _filePath = filePath;
             _fileName = fileName;
-            _hash = hash;
             Headers.ContentType = new MediaTypeHeaderValue("multipart/form-data");
             Headers.ContentType.Parameters.Add(new NameValueHeaderValue("boundary", _boundary));
         }
@@ -26,12 +24,7 @@ namespace MOVEit_TransferApp.Models
             using var fileStream = new FileStream(_filePath, FileMode.Open, FileAccess.Read);
             byte[] buffer = new byte[ChunkSize];
             int bytesRead;
-
             string header = $"--{_boundary}\r\n" +
-                            $"Content-Disposition: form-data; name=\"hashtype\"\r\n\r\nsha-256\r\n" +
-                            $"--{_boundary}\r\n" +
-                            $"Content-Disposition: form-data; name=\"hash\"\r\n\r\n{_hash}\r\n" +
-                            $"--{_boundary}\r\n" +
                             $"Content-Disposition: form-data; name=\"file\"; filename=\"{_fileName}\"\r\n" +
                             $"Content-Type: application/octet-stream\r\n\r\n";
 

@@ -23,7 +23,7 @@ namespace MOVEit_TransferApp.Services
             _client.DefaultRequestHeaders.ConnectionClose = false;
         }
 
-        public async void MonitorFolder(string folderPath, Func<string, int, Task> notificationCallBack = null)
+        public async void MonitorFolder(string folderPath, Func<string, long, Task> notificationCallBack = null)
         {
             StopWatching();
 
@@ -39,8 +39,14 @@ namespace MOVEit_TransferApp.Services
             _watcher.Created += (sender, e) => Task.Run(() => UploadNewFileAsync(e.FullPath, notificationCallBack));
         }
 
-        private async Task UploadNewFileAsync(string filePath, Func<string, int, Task> notificationCallBack = null)
+        private async Task UploadNewFileAsync(string filePath, Func<string, long, Task> notificationCallBack = null)
         {
+            if (!await WaitForFile(filePath))
+            {
+                Console.WriteLine($"File {filePath} is not accessible.");
+                return;
+            }
+
             string homeFolderId = await GetHomeFolderId();
 
             if (homeFolderId != null)
@@ -76,7 +82,7 @@ namespace MOVEit_TransferApp.Services
 
                     if (response.IsSuccessStatusCode)
                     {
-                        notificationCallBack?.Invoke(fileInfo.Name, (int)fileSize);
+                        notificationCallBack?.Invoke(fileInfo.Name, fileSize);
                     }
                     else
                     {
@@ -92,11 +98,41 @@ namespace MOVEit_TransferApp.Services
             }
         }
 
+        private async Task<bool> WaitForFile(string filePath, int delayMs = 3000, int maxAttempts = 100)
+        {
+            int attempt = 1;
+
+            while (true)
+            {
+                try
+                {
+                    using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+
+                    attempt++;
+                    
+                    if (stream.Length > 0)
+                    {
+                        return true;
+                    }
+                }
+                catch (IOException)
+                {
+                    Console.WriteLine($"File {filePath} is still being written... Retrying {attempt}/{maxAttempts}");
+
+                    if (attempt >= maxAttempts)
+                    {
+                        return false;
+                    }
+                }
+
+                await Task.Delay(delayMs);
+            }
+        }
+
         private async Task UploadFileInChunksAsync(FileInfo fileInfo, string filePath, long fileSize,
-            string homeFolderId, string token, Func<string, int, Task> notificationCallBack = null)
+            string homeFolderId, string token, Func<string, long, Task> notificationCallBack = null)
         {
             string fileName = fileInfo.Name;
-            string hashString = GetHashString(filePath);
 
             var requestUri = $"{_url}/{homeFolderId}/files";
 
@@ -106,7 +142,7 @@ namespace MOVEit_TransferApp.Services
 
             try
             {
-                request.Content = new MultipartChunkedFileContent(filePath, fileName, hashString);
+                request.Content = new MultipartChunkedFileContent(filePath, fileName);
             }
             catch (Exception ex)
             {
@@ -117,7 +153,7 @@ namespace MOVEit_TransferApp.Services
 
             if (response.IsSuccessStatusCode)
             {
-                notificationCallBack?.Invoke(fileName, (int)fileSize);
+                notificationCallBack?.Invoke(fileName, fileSize);
             }
             else
             {
@@ -125,16 +161,6 @@ namespace MOVEit_TransferApp.Services
                 Console.WriteLine($"File upload failed: {response.StatusCode}");
                 Console.WriteLine($"Error details: {errorMessage}");
             }
-        }
-
-        private static string GetHashString(string filePath)
-        {
-            using var hashAlgorithm = SHA256.Create();
-            using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-
-            byte[] hashBytes = hashAlgorithm.ComputeHash(fileStream);
-
-            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
         }
 
         private async Task<string> GetHomeFolderId()
