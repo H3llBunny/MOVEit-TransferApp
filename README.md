@@ -13,9 +13,10 @@
 2. <span>Unzip the file and search for:</span>  
    <img src="https://github.com/user-attachments/assets/34f927be-a0c2-472f-b36d-6907d0350ea8"/>
 
-3. Execute it and wait for the cmd to show you the following:
-   <img src="https://github.com/user-attachments/assets/fa377470-2621-4f40-807f-9257c68c6203"/>
-4. You can minimize the CMD and access the web interface of the app on <a href="https://localhost:7191">https://localhost:7191</a> or <a href="http://localhost:5176">http://localhost:5176</a>
+3. Execute it and wait for the CMD to show you the following:
+   <img src="https://github.com/user-attachments/assets/1b80281a-d6c6-49c8-bffa-ed85880de86b"/>
+
+4. You can minimize the CMD and access the web interface of the app on <a href="https://localhost:7191">https://localhost:7191</a>
 5. Provide your MOVEit Transfer credentials.
 6. Select path to any local folder:
 
@@ -27,4 +28,6 @@
    
    <img src="https://github.com/user-attachments/assets/580ecd8f-0639-478f-93b3-072115548e14" />
 
-The program is still in early stages and has some bugs to be fixed. I managed to upload 400 MB single file, however when I tested with 2.3 GB I get an error: "Hash of file did not match correct value", so I need more playtime with it.
+The program supporst uploading large files as well. It is still in early stages so beware of bugs 😅
+
+<img src="https://github.com/user-attachments/assets/eb5082d7-12bc-4e91-ad72-2b976bab2e9c" />
