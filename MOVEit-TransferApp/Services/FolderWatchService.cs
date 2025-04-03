@@ -7,7 +7,7 @@ namespace MOVEit_TransferApp.Services
 {
     public class FolderWatchService : IDisposable
     {
-        private FileSystemWatcher _watcher;
+        private FileSystemWatcher? _watcher;
         private readonly HttpClient _client;
         private readonly ILogger<FolderWatchService> _logger;
         private string _tokenPath = Path.Combine(AppContext.BaseDirectory, "user_token.json");
@@ -39,7 +39,7 @@ namespace MOVEit_TransferApp.Services
             _watcher.Created += (sender, e) => Task.Run(() => UploadNewFileAsync(e.FullPath, notificationCallBack));
         }
 
-        private async Task UploadNewFileAsync(string filePath, Func<string, long, Task> notificationCallBack = null)
+        private async Task UploadNewFileAsync(string filePath, Func<string, long, Task>? notificationCallBack = null)
         {
             if (!await WaitForFile(filePath))
             {
@@ -69,7 +69,7 @@ namespace MOVEit_TransferApp.Services
                 else
                 {
                     using var fileStream = File.OpenRead(filePath);
-                    var fileContent = new StreamContent(fileStream);
+                    using var fileContent = new StreamContent(fileStream);
 
                     var content = new MultipartFormDataContent()
                     {
@@ -98,7 +98,7 @@ namespace MOVEit_TransferApp.Services
             }
         }
 
-        private async Task<bool> WaitForFile(string filePath, int delayMs = 3000, int maxAttempts = 100)
+        private static async Task<bool> WaitForFile(string filePath, int delayMs = 3000, int maxAttempts = 100)
         {
             int attempt = 1;
 
@@ -130,7 +130,7 @@ namespace MOVEit_TransferApp.Services
         }
 
         private async Task UploadFileInChunksAsync(FileInfo fileInfo, string filePath, long fileSize,
-            string homeFolderId, string token, Func<string, long, Task> notificationCallBack = null)
+            string homeFolderId, string token, Func<string, long, Task>? notificationCallBack = null)
         {
             string fileName = fileInfo.Name;
 
@@ -163,7 +163,7 @@ namespace MOVEit_TransferApp.Services
             }
         }
 
-        private async Task<string> GetHomeFolderId()
+        private async Task<string?> GetHomeFolderId()
         {
             string token = await GetUserToken();
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);

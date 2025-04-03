@@ -4,6 +4,6 @@
     {
         public bool HasToken { get; set; }
 
-        public string UserFolderPath { get; set; }
+        public string? UserFolderPath { get; set; }
     }
 }

@@ -31,15 +31,18 @@ namespace MOVEit_TransferApp.Controllers
                 string tokenJson = await System.IO.File.ReadAllTextAsync(tokenPath);
                 var token = JsonSerializer.Deserialize<Token>(tokenJson);
 
-                if (token.IsExpired())
+                if (token != null && token.IsExpired())
+                {
+                    return View();
+                }
+                else if (token == null)
                 {
                     return View();
                 }
                 else
                 {
-                    TempData["HasToken"] = true;
                     bool folderPath = System.IO.File.Exists(userFolderPath);
-                    string path = null;
+                    string? path = null;
 
                     if (folderPath)
                     {
@@ -77,7 +80,7 @@ namespace MOVEit_TransferApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddFolderPath(string folderPath)
+        public IActionResult AddFolderPath(string folderPath)
         {
             if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
             {

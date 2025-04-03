@@ -29,15 +29,15 @@ namespace MOVEit_TransferApp.Models
                             $"Content-Type: application/octet-stream\r\n\r\n";
 
             byte[] headerBytes = Encoding.UTF8.GetBytes(header);
-            await stream.WriteAsync(headerBytes, 0, headerBytes.Length);
+            await stream.WriteAsync(headerBytes);
 
             try
             {
-                while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                while ((bytesRead = await fileStream.ReadAsync(buffer)) > 0)
                 {
                     try
                     {
-                        await stream.WriteAsync(buffer, 0, bytesRead);
+                        await stream.WriteAsync(buffer.AsMemory(0, bytesRead));
                     }
                     catch (Exception ex)
                     {
@@ -47,7 +47,7 @@ namespace MOVEit_TransferApp.Models
                 }
 
                 byte[] trailer = Encoding.UTF8.GetBytes($"\r\n--{_boundary}--\r\n");
-                await stream.WriteAsync(trailer, 0, trailer.Length);
+                await stream.WriteAsync(trailer);
             }
             catch (Exception ex)
             {
