@@ -101,10 +101,12 @@ else
                 fileName = `${trimmedName}...${extension}`;
             }
 
-            if (size < 0) {
+            if (size === -1) {
                 displayNotificationError(`Error uploading file: ${fileName}`);
-            } else {
+            } else if (size >= 0) {
                 displayNotification(`File uploaded: ${fileName}, Size: ${formatFileSize(size)}`);
+            } else if (size === -2) {
+                displayNotificationError(`Deleted file: ${fileName}`);
             }
         });
 

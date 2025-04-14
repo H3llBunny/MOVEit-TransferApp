@@ -2,6 +2,8 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Security.Cryptography;
+using Serilog.Sinks.File;
+using System.IO;
 
 namespace MOVEit_TransferApp.Services
 {
@@ -13,6 +15,7 @@ namespace MOVEit_TransferApp.Services
         private string _tokenPath = Path.Combine(AppContext.BaseDirectory, "user_token.json");
         private string _userFolderPath = Path.Combine(AppContext.BaseDirectory, "user_folder_path.txt");
         private const string _url = "https://testserver.moveitcloud.com/api/v1/folders";
+        private const string _deleteUrl = "https://testserver.moveitcloud.com/api/v1/files/";
         private const int _MaxFileSize = 52428800;
 
         public FolderWatchService(HttpClient client, ILogger<FolderWatchService> logger)
@@ -37,6 +40,7 @@ namespace MOVEit_TransferApp.Services
             };
 
             _watcher.Created += (sender, e) => Task.Run(() => UploadNewFileAsync(e.FullPath, notificationCallBack));
+            _watcher.Deleted += (sender, e) => Task.Run(() => DeleteFileAsync(e.FullPath, notificationCallBack));
         }
 
         private async Task UploadNewFileAsync(string filePath, Func<string, long, Task>? notificationCallBack = null)
@@ -109,7 +113,7 @@ namespace MOVEit_TransferApp.Services
                     using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
 
                     attempt++;
-                    
+
                     if (stream.Length > 0)
                     {
                         return true;
@@ -160,6 +164,55 @@ namespace MOVEit_TransferApp.Services
                 string errorMessage = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"File upload failed: {response.StatusCode}");
                 Console.WriteLine($"Error details: {errorMessage}");
+            }
+        }
+
+        private async Task DeleteFileAsync(string filePath, Func<string, long, Task>? notificationCallBack = null)
+        {
+            string? homeFolderId = await GetHomeFolderId();
+            string? token = await GetUserToken();
+            var fileInfo = new FileInfo(filePath);
+            long fileSize = filePath.Length;
+
+            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(homeFolderId)) return;
+
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            string filesUrl = $"{_url}/{homeFolderId}/files";
+            var filesResponse = await _client.GetAsync(filesUrl);
+
+            if (filesResponse.IsSuccessStatusCode)
+            {
+                var filesContent = await filesResponse.Content.ReadAsStringAsync();
+                var jsonDoc = JsonDocument.Parse(filesContent);
+                var root = jsonDoc.RootElement;
+
+                if (root.TryGetProperty("items", out JsonElement items) && items.ValueKind == JsonValueKind.Array)
+                {
+                    string localFileName = Path.GetFileName(filePath);
+
+                    foreach (var item in items.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("name", out var nameProperty) && nameProperty.GetString() == localFileName)
+                        {
+                            var itemId = item.GetProperty("id").GetString();
+                            string deleteUrl = $"{_deleteUrl}{itemId}";
+                            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                            var response = await _client.DeleteAsync(deleteUrl);
+
+                            if (response.IsSuccessStatusCode)
+                            {
+                                notificationCallBack?.Invoke(localFileName, -2);
+                            }
+                            else
+                            {
+                                string errorMessage = $"{localFileName} - {response.StatusCode}";
+                                notificationCallBack?.Invoke(errorMessage, -1);
+                                _logger.LogError($"Error uploading file: {response.StatusCode}");
+                            }
+                        }
+                    }
+                }
             }
         }
 
